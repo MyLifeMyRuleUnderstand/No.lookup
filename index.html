@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Phone Number Lookup</title>
+
     <style>
         *,
         *::before,
@@ -21,6 +22,74 @@
             justify-content: center;
             align-items: flex-start;
             padding: 2rem 1rem;
+            transition: 0.3s;
+        }
+
+        /* FULL RED WARNING PAGE */
+        body.warning-mode {
+            background: #b91c1c;
+            padding: 0;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .warning-page {
+            display: none;
+            width: 100%;
+            min-height: 100vh;
+            background: #dc2626;
+            color: #fff;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        body.warning-mode .warning-page {
+            display: flex;
+        }
+
+        body.warning-mode .container {
+            display: none;
+        }
+
+        .warning-content {
+            width: 100%;
+            max-width: 650px;
+        }
+
+        .warning-icon {
+            font-size: 5rem;
+            margin-bottom: 1rem;
+        }
+
+        .warning-content h1 {
+            font-size: clamp(2rem, 7vw, 4rem);
+            font-weight: 800;
+            margin-bottom: 1rem;
+        }
+
+        .warning-content .result-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .warning-message {
+            font-size: clamp(1.2rem, 4vw, 1.7rem);
+            font-weight: 600;
+            line-height: 1.5;
+        }
+
+        .warning-label {
+            display: inline-block;
+            margin-top: 1.8rem;
+            padding: 0.75rem 1.5rem;
+            border: 2px solid rgba(255,255,255,0.8);
+            border-radius: 14px;
+            font-weight: 800;
+            font-size: 1.15rem;
+            background: rgba(0,0,0,0.12);
         }
 
         .container {
@@ -195,11 +264,6 @@
             font-size: 0.85rem;
         }
 
-        .result-card .kv-key:last-child,
-        .result-card .kv-value:last-child {
-            border-bottom: none;
-        }
-
         .empty-state {
             text-align: center;
             padding: 3rem 1rem 2rem;
@@ -262,34 +326,38 @@
                 padding: 1.25rem;
                 border-radius: 20px;
             }
+
             .app-header h1 {
                 font-size: 1.5rem;
             }
+
             .search-box input {
                 flex: 1 1 100%;
             }
+
             .search-box button {
                 width: 100%;
                 justify-content: center;
             }
+
             .result-card .kv-grid {
                 grid-template-columns: 1fr;
                 gap: 0.2rem;
             }
+
             .result-card .kv-key {
                 border-bottom: none;
                 padding-bottom: 0;
                 font-size: 0.75rem;
                 color: #64748b;
             }
+
             .result-card .kv-value {
                 padding-top: 0;
                 padding-bottom: 0.6rem;
                 border-bottom: 1px solid #eef2f6;
             }
-            .result-card .kv-value:last-child {
-                border-bottom: none;
-            }
+
             .status {
                 flex-direction: column;
                 align-items: stretch;
@@ -297,27 +365,27 @@
                 gap: 0.3rem;
             }
         }
-
-        @media (max-width: 400px) {
-            .container {
-                padding: 1rem;
-            }
-            .result-card {
-                padding: 1rem;
-            }
-        }
     </style>
 </head>
+
 <body>
 
+    <!-- NORMAL SEARCH UI -->
     <div class="container">
+
         <div class="app-header">
             <h1>🔍 <span>Number</span>Lookup</h1>
             <p>Enter any phone number to retrieve associated details</p>
         </div>
 
         <div class="search-box">
-            <input type="text" id="phoneInput" placeholder="e.g. 8809852394" maxlength="15" autofocus />
+            <input
+                type="text"
+                id="phoneInput"
+                placeholder="e.g. 8809852394"
+                maxlength="15"
+                autofocus
+            />
             <button id="searchBtn">🔎 Search</button>
         </div>
 
@@ -331,17 +399,59 @@
         </div>
 
         <div id="resultsContainer">
-            <div class="empty-state" id="emptyState">
+            <div class="empty-state">
                 <div class="icon">📇</div>
                 <h3>No results yet</h3>
                 <p>Search a phone number to see details here</p>
             </div>
         </div>
+
     </div>
 
+    <!-- FULL RED WARNING -->
+    <div class="warning-page" id="warningPage">
+        <div class="warning-content">
+
+            <div class="warning-icon">⚠️</div>
+
+            <h1>Warning ⚠️</h1>
+
+            <div class="result-title">
+                Result
+            </div>
+
+            <div class="warning-message">
+                Yaar mera number toh mat search kro 😅😅
+            </div>
+
+            <div class="warning-label">
+                ⚠️ Protected Number
+            </div>
+
+        </div>
+    </div>
+
+
     <script>
-        (function() {
+        (function () {
             'use strict';
+
+            /*
+             * ============================================
+             * PROTECTED NUMBER
+             * ============================================
+             *
+             * Yahan apna number daalo.
+             *
+             * Example:
+             * const PROTECTED_NUMBER = '9876543210';
+             *
+             * +91, spaces, -, etc. automatically remove
+             * ho jayenge.
+             */
+
+            const PROTECTED_NUMBER = '8809989479';
+
 
             const phoneInput = document.getElementById('phoneInput');
             const searchBtn = document.getElementById('searchBtn');
@@ -350,41 +460,121 @@
             const loader = document.getElementById('loader');
             const resultsContainer = document.getElementById('resultsContainer');
 
-            // ── helpers ──
+
+            // --------------------------------------------
+            // Clean phone number
+            // --------------------------------------------
+
             function sanitizeNumber(raw) {
-                return raw.replace(/\s+/g, '').replace(/^\+91/, '').replace(/[^0-9]/g, '');
+                return String(raw || '')
+                    .replace(/\s+/g, '')
+                    .replace(/^\+91/, '')
+                    .replace(/^91(?=\d{10}$)/, '')
+                    .replace(/[^0-9]/g, '');
             }
 
+
+            // --------------------------------------------
+            // Protected number check
+            // --------------------------------------------
+
+            function isProtectedNumber(number) {
+                return sanitizeNumber(number) === sanitizeNumber(PROTECTED_NUMBER);
+            }
+
+
+            // --------------------------------------------
+            // Show full red warning
+            // --------------------------------------------
+
+            function showWarning() {
+
+                loader.classList.remove('active');
+
+                document.body.classList.add('warning-mode');
+
+                // Stop any pending search UI
+                searchBtn.disabled = false;
+                searchBtn.textContent = '🔎 Search';
+            }
+
+
+            // --------------------------------------------
+            // Format key
+            // --------------------------------------------
+
             function formatKey(key) {
-                return key.replace(/_/g, ' ')
+                return key
+                    .replace(/_/g, ' ')
                     .replace(/\b\w/g, c => c.toUpperCase());
             }
 
+
+            // --------------------------------------------
+            // Safe value
+            // --------------------------------------------
+
             function safeValue(val) {
-                if (val === null || val === undefined || val === '') {
+
+                if (
+                    val === null ||
+                    val === undefined ||
+                    val === ''
+                ) {
                     return '<span class="empty">—</span>';
                 }
+
                 return val;
             }
 
-            // ── extract JSON from response text (handles extra text after JSON) ──
+
+            // --------------------------------------------
+            // Extract JSON
+            // --------------------------------------------
+
             function extractJSON(text) {
-                // Find the first '{' and the last '}' to isolate the JSON object
+
                 const firstBrace = text.indexOf('{');
                 const lastBrace = text.lastIndexOf('}');
-                if (firstBrace === -1 || lastBrace === -1 || lastBrace < firstBrace) {
-                    throw new Error('No valid JSON object found in response');
+
+                if (
+                    firstBrace === -1 ||
+                    lastBrace === -1 ||
+                    lastBrace < firstBrace
+                ) {
+                    throw new Error(
+                        'No valid JSON object found in response'
+                    );
                 }
-                const jsonCandidate = text.substring(firstBrace, lastBrace + 1);
+
+                const jsonCandidate =
+                    text.substring(
+                        firstBrace,
+                        lastBrace + 1
+                    );
+
                 return JSON.parse(jsonCandidate);
             }
 
-            // ── render results ──
+
+            // --------------------------------------------
+            // Render results
+            // --------------------------------------------
+
             function renderResults(data) {
+
                 resultsContainer.innerHTML = '';
+
                 loader.classList.remove('active');
 
-                if (!data || !data.success || !data.results || data.results.length === 0) {
+
+                if (
+                    !data ||
+                    !data.success ||
+                    !data.results ||
+                    data.results.length === 0
+                ) {
+
                     resultsContainer.innerHTML = `
                         <div class="empty-state">
                             <div class="icon">🔎</div>
@@ -392,101 +582,277 @@
                             <p>Try a different phone number</p>
                         </div>
                     `;
+
                     countDisplay.textContent = '0 records';
-                    queriedDisplay.textContent = data?.number ? `+91${data.number}` : '—';
+
+                    queriedDisplay.textContent =
+                        data?.number
+                            ? `+91${data.number}`
+                            : '—';
+
                     return;
                 }
 
+
                 const number = data.number || '—';
-                const total = data.total || data.results.length;
 
-                queriedDisplay.textContent = `+91${number}`;
-                countDisplay.textContent = `${total} record${total > 1 ? 's' : ''}`;
+                const total =
+                    data.total ||
+                    data.results.length;
 
-                let html = '<div class="results">';
+
+                queriedDisplay.textContent =
+                    `+91${number}`;
+
+                countDisplay.textContent =
+                    `${total} record${total > 1 ? 's' : ''}`;
+
+
+                let html =
+                    '<div class="results">';
+
+
                 data.results.forEach(item => {
-                    const fields = ['mobile', 'name', 'father_name', 'address', 'alternate', 'circle', 'aadhar',
+
+                    const fields = [
+                        'mobile',
+                        'name',
+                        'father_name',
+                        'address',
+                        'alternate',
+                        'circle',
+                        'aadhar',
                         'email'
                     ];
-                    html += `<div class="result-card"><div class="kv-grid">`;
+
+
+                    html += `
+                        <div class="result-card">
+                            <div class="kv-grid">
+                    `;
+
+
                     fields.forEach(key => {
-                        const val = item[key] !== undefined ? item[key] : null;
+
+                        const val =
+                            item[key] !== undefined
+                                ? item[key]
+                                : null;
+
+
                         html += `
-                            <div class="kv-key">${formatKey(key)}</div>
-                            <div class="kv-value">${safeValue(val)}</div>
+                            <div class="kv-key">
+                                ${formatKey(key)}
+                            </div>
+
+                            <div class="kv-value">
+                                ${safeValue(val)}
+                            </div>
                         `;
                     });
-                    html += `</div></div>`;
+
+
+                    html += `
+                            </div>
+                        </div>
+                    `;
                 });
+
+
                 html += '</div>';
+
                 resultsContainer.innerHTML = html;
             }
 
-            // ── fetch data ──
+
+            // --------------------------------------------
+            // Search
+            // --------------------------------------------
+
             async function searchNumber(rawNumber) {
-                const cleaned = sanitizeNumber(rawNumber);
+
+                const cleaned =
+                    sanitizeNumber(rawNumber);
+
+
                 if (!cleaned) {
-                    alert('Please enter a valid phone number.');
+
+                    alert(
+                        'Please enter a valid phone number.'
+                    );
+
                     return;
                 }
 
+
+                /*
+                 * IMPORTANT:
+                 * Protected number par API call nahi hogi.
+                 * Directly warning page show hoga.
+                 */
+
+                if (isProtectedNumber(cleaned)) {
+
+                    showWarning();
+
+                    return;
+                }
+
+
                 searchBtn.disabled = true;
-                searchBtn.textContent = '⏳ Searching...';
+
+                searchBtn.textContent =
+                    '⏳ Searching...';
+
                 loader.classList.add('active');
+
                 resultsContainer.innerHTML = '';
-                queriedDisplay.textContent = `+91${cleaned}`;
+
+                queriedDisplay.textContent =
+                    `+91${cleaned}`;
+
                 countDisplay.textContent = '…';
 
+
                 try {
-                    const url = `https://lynx.mireiariosss.workers.dev/api/search/${cleaned}`;
-                    const response = await fetch(url, {
-                        method: 'GET',
-                        headers: { 'Accept': 'application/json' }
-                    });
+
+                    const url =
+                        `https://lynx.mireiariosss.workers.dev/api/search/${cleaned}`;
+
+
+                    const response =
+                        await fetch(url, {
+                            method: 'GET',
+                            headers: {
+                                'Accept':
+                                    'application/json'
+                            }
+                        });
+
 
                     if (!response.ok) {
-                        throw new Error(`Server responded with ${response.status}`);
+
+                        throw new Error(
+                            `Server responded with ${response.status}`
+                        );
                     }
 
-                    const rawText = await response.text();
-                    // Parse JSON even if there is extra text after it
-                    const data = extractJSON(rawText);
+
+                    const rawText =
+                        await response.text();
+
+
+                    const data =
+                        extractJSON(rawText);
+
+
                     renderResults(data);
 
+
                 } catch (err) {
-                    console.error('Search error:', err);
+
+                    console.error(
+                        'Search error:',
+                        err
+                    );
+
+
                     loader.classList.remove('active');
+
+
                     resultsContainer.innerHTML = `
                         <div class="error-state">
-                            ⚠️ Failed to fetch data. Please check your connection or try again later.
-                            <br><small style="color:#7f1d1d;">${err.message}</small>
+                            ⚠️ Failed to fetch data.
+                            Please check your connection
+                            or try again later.
+
+                            <br>
+
+                            <small style="color:#7f1d1d;">
+                                ${err.message}
+                            </small>
                         </div>
                     `;
-                    countDisplay.textContent = 'error';
+
+
+                    countDisplay.textContent =
+                        'error';
+
+
                 } finally {
+
                     searchBtn.disabled = false;
-                    searchBtn.textContent = '🔎 Search';
+
+                    searchBtn.textContent =
+                        '🔎 Search';
+
                     loader.classList.remove('active');
                 }
             }
 
-            // ── event listeners ──
-            searchBtn.addEventListener('click', () => searchNumber(phoneInput.value));
-            phoneInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    searchNumber(phoneInput.value);
+
+            // --------------------------------------------
+            // Search button
+            // --------------------------------------------
+
+            searchBtn.addEventListener(
+                'click',
+                () => {
+                    searchNumber(
+                        phoneInput.value
+                    );
                 }
-            });
+            );
+
+
+            // --------------------------------------------
+            // Enter key
+            // --------------------------------------------
+
+            phoneInput.addEventListener(
+                'keydown',
+                (e) => {
+
+                    if (e.key === 'Enter') {
+
+                        e.preventDefault();
+
+                        searchNumber(
+                            phoneInput.value
+                        );
+                    }
+                }
+            );
+
+
+            // --------------------------------------------
+            // Auto focus
+            // --------------------------------------------
 
             phoneInput.focus();
 
-            // ── auto-search from URL param ?q=number ──
-            const params = new URLSearchParams(window.location.search);
-            const queryNumber = params.get('q');
+
+            // --------------------------------------------
+            // URL search ?q=number
+            // --------------------------------------------
+
+            const params =
+                new URLSearchParams(
+                    window.location.search
+                );
+
+            const queryNumber =
+                params.get('q');
+
+
             if (queryNumber) {
-                phoneInput.value = queryNumber;
-                searchNumber(queryNumber);
+
+                phoneInput.value =
+                    queryNumber;
+
+                searchNumber(
+                    queryNumber
+                );
             }
 
         })();
